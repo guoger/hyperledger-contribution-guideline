@@ -4,4 +4,4 @@
 
 各指南链接
 -------------------
-- [Fabric](./guide.md)
+- [Fabric](./fabric.md)
