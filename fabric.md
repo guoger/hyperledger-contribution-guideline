@@ -10,30 +10,55 @@ _Hyperledger Fabric（以下简称Fabric）欢迎各位大神积极参与代码�
 
 ## 安装开发环境
 * git客户端，通常需要您可以在命令行中执行git命令
+* [可选] git review插件,用于支持`git review`命令，安装方法可以参考 https://www.mediawiki.org/wiki/Gerrit/git-review
 * Go编程语言1.10.x以及配置好的开发环境，例如GOPATH，GOROOT以及相应的文件夹结构，请参考[Golang文档](https://golang.org/doc)
 * Docker 和 Docker Compose
-MacOSX, \*nix, Windows10需要安装Docker 17.06.2-ce或以上版本。Windows10以下版本的OS需要安装Docker Toolbox，同样要求17.06.2-ce或以上版本。
+MacOSX, Unix类系统, Windows10需要安装Docker 17.06.2-ce或以上版本。Windows10以下版本的OS需要安装Docker Toolbox，同样要求17.06.2-ce或以上版本。
+* 安装libtool
+  * Ubuntu: `apt-get install -y libtool`
+  * MacOS: `brew install libtool`
 * MacOS的用户需要安装以下额外的工具
   * Xcode
   * 执行 `brew install gnu-tar --with-default-names` 安装gnutar来替换自带的bsdtar
-  * `brew install libtool`
-
-## 获取Linux Foundation ID (LFID)
-* 前往https://identity.linuxfoundation.org/ 注册一个LFID并登陆
-* 前往https://gerrit.hyperledger.org 并点击右上角Sign in，使用您的LFID登陆
-* 配置Gerrit使用ssh。可以参考[该章节](https://hyperledger-fabric.readthedocs.io/en/latest/Gerrit/lf-account.html#configuring-gerrit-to-use-ssh)
 
 ## 获取源码
-在$GOPATH/src/github.com/hyperledger下运行命令：
-```
-git clone ssh://LFID@gerrit.hyperledger.org:29418/fabric && scp -p -P 29418 LFID@gerrit.hyperledger.org:hooks/commit-msg fabric/.git/hooks/
-```
-该命令会克隆fabric源码，并下载githooks。
+1. 前往https://gerrit.hyperledger.org 并点击右上角Sign in，使用您的LFID(Linux Foundation ID)登陆
+    * 如果没有LFID（第一次使用），请前往https://identity.linuxfoundation.org/ 注册一个LFID
+2. 在项目列表找到fabric项目，进入项目主页
+    * `Projects` -> `List` -> `fabric`
+3. 点选左上方的`Clone with commit-msg hook`按钮
+    * *错误示例：如果没有登陆你的 LFID，你将看不到 `Clone with commit-msg hook`按钮，只能看到 clone | anonymous http 按钮*
+4. 在按钮同一栏的右边，选择验证方式 anonymous http|http|ssh，并复制其下方的命令
+    * ssh方式：需要给gerrit配置ssh
+      - 参考https://hyperledger-fabric.readthedocs.io/en/latest/Gerrit/lf-account.html#configuring-gerrit-to-use-ssh
+      - 缺点：需要先生成本机的ssh pubkey文件，并在https://gerrit.hyperledger.org/ 的个人设置中将pubkey的内容加入列表中，才可以使用。每台开发机都需要做一次
+      - 命令形如
+      ```
+      git clone ssh://<LFID>@gerrit.hyperledger.org:29418/fabric && scp -p -P 29418 <LFID>@gerrit.hyperledger.org:hooks/commit-msg fabric/.git/hooks/
+      ```
+    * http方式:
+      - 运行期间,需要输入LFID对应的密码
+      - 命令形如
+      ```
+      git clone https://<LFID>@gerrit.hyperledger.org/r/a/fabric && (cd fabric && curl -kLo `git rev-parse --git-dir`/hooks/commit-msg https://<LFID>@gerrit.hyperledger.org/r/tools/hooks/commit-msg; chmod +x `git rev-parse --git-dir`/hooks/commit-msg)  
+      ```
+    * anonymous http方式：与http验证类似
+      - 运行期间,需要输入LFID以及对应的密码
+      - 命令如下
+      ```
+      git clone https://gerrit.hyperledger.org/r/fabric && (cd fabric && curl -kLo `git rev-parse --git-dir`/hooks/commit-msg https://gerrit.hyperledger.org/r/tools/hooks/commit-msg; chmod +x `git rev-parse --git-dir`/hooks/commit-msg)
+      ```
 
-下载源码后，在fabric根目录下，运行`make gotools`安装一些fabric开发依赖的go工具，例如golint
+5. 在$GOPATH/src/github.com/hyperledger下运行复制的命令
+    * 无论选用哪种验证方式,复制的命令都会克隆fabric源码，并下载githooks。
+6. 下载源码后，前往fabric根目录
 
 ## 编译和测试
-在fabric/Makefile中，您可以看到许多构建项目。通过make，您可以自动化地编译和测试fabric代码。下面列举几个在代码开发过程中，常用到的命令：
+在fabric/Makefile中，您可以看到许多构建项目。通过make，您可以自动化地编译和测试fabric代码。
+
+**第一次开发前,建议运行`make gotools`安装一些fabric开发依赖的go工具，例如golint**
+
+下面列举几个在代码开发过程中，常用到的命令：
 * `make basic-checks`对代码进行一些必要的检查，例如是否有License，拼写错误，代码风格检查等
 * `make unit-test`运行所有go的单元测试
 * `make integration-test`运行所有的集成测试
@@ -43,15 +68,19 @@ git clone ssh://LFID@gerrit.hyperledger.org:29418/fabric && scp -p -P 29418 LFID
 这里仅仅列出了一些您可能在开发中常用的命令。我们强烈建议您浏览Makefile最顶部的注释部分，这有助于您了解Fabric的编译系统。这对您以后的开发极为有益。通常来讲，在您修改了fabric代码之后，应当运行`make basic-checks`和`make unit-test`来避免显而易见的错误。
 
 ## 修改代码
-在提交代码之前，您应当明确您的修改所对应的JIRA。通常来讲，您应当将对应的JIRA assign给您自己，避免别人重复您的工作。
+在提交代码之前，您应当明确您的修改所对应的JIRA Issue。通常来讲，您应当将对应的Issue assign给您自己，避免别人重复您的工作。
 
-通常来讲，您的修改应当在master分支上进行。当您修改完成后，使用`git commit -s`产生一个新的commit，并使用如下模板：
-```
-[FAB-XXXX] title of your commit message
+通常来讲，您的修改应当在master分支上进行。
+当您修改完成后，使用`git commit -s`产生一个新的commit，并使用如下模板：
 
-In your commit message, you should precisely describe
-what this commit does.
-```
+  > [FAB-XXXX] <标题,不能超过55个字符>  
+  > <空行>  
+  > <内容：每行不超过80字符，其中应该包括  
+  >     - 你的提交做了什么？  
+  >     - 为何选用这种方式去进行改动  
+  >     - 改动的正确性，比如提交你成功的代码测试结果
+  >     
+  > >
 _tips: 当您成功创建commit之后，可以使用`git log`查看commit message。您会看到其中除了您刚才填写的内容外，githook还自动为您添加了change-id。在您之后更新修改并再次提交时，gerrit会根据此id确定是否创建新的Change Request(CR)或更新已有的_
 
 ## 提交代码
@@ -76,7 +105,7 @@ To ssh://LFID@gerrit.hyperledger.org:29418/fabric
 _tips：您还可以使用`git review`来提交代码，请参考[这里](https://hyperledger-fabric.readthedocs.io/en/latest/Gerrit/gerrit.html#using-git-review)_
 
 ## 修改您的提交
-当您在gerrit中收到反馈后，您可以修改您的提交。此时，请使用`git commit --amend`来复写您的commit，并仍然使用`git push`来提交。当commit中的change-id保持不变时，gerrit会自动在已有的CR基础上进行更新。如果您由于某些原因创建了新的commit，请用原有的change-id覆盖新生成的，以免创建新的CR。
+当您在gerrit中收到反馈后，您可以修改您的提交。此时，请使用`git commit --amend`来复写您的commit，并仍然使用`git push`或者`git review`来提交。当commit中的change-id保持不变时，gerrit会自动在已有的CR基础上进行更新。如果您由于某些原因创建了新的commit，请用原有的change-id覆盖新生成的，以免创建新的CR。
 
 ## 完整流程
 _此处插入完整流程图_
@@ -92,12 +121,11 @@ _此处插入完整流程图_
 
 ### Q: 我提交了代码之后，应该找谁来review？
 通常来讲，您可以使用`git blame`来找到您修改的部分由谁维护，并添加TA为reviewer。请一定仔细阅读文档中[关于代码风格的段落](https://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html#what-makes-a-good-change-request)。这有助于您的修改被顺利提交。一些值得注意的事项：
-- 请不要在一个提交中完成所有的事情，使得一个commit包含太多改动。这在几乎所有的开源社区中，都不是一个好的习惯。如果改动过多，请分解成几个逻辑独立的commit。您可以从reviewer的角度换位思考，您希望看到怎样的代码风格。
-- 您的修改需要有测试。
+- 请不要在一个提交中完成所有的事情，使得一个commit包含太多改动。这在几乎所有的开源社区中，都不是一个好的习惯。如果改动过多，请分解成几个逻辑独立的commit。**尽量使得每个提交不超过500行修改**。您可以从reviewer的角度换位思考，您希望看到怎样的代码风格。
+- 您的修改需要被测试代码覆盖。
 - 社区的reviewer通常来讲都比较繁忙，请有一些耐心。如果您的代码不涉及严重的安全漏洞，可能优先级不会很高，请理解。
 
 ### Q: 为什么我的代码被merge了之后，在github的contributors页面里没有显示？
 Fabric的页面默认显示release分支上的数据，而您的代码通常来讲被merge到了master分支。在您的代码被发布到一个release版本中后，您会看到您的信息显示在contributor页面里。
 
 
-_Author: Jay Guo<guojiannan1101@gmail.com>_
