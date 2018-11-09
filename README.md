@@ -3,6 +3,7 @@
 
 ## 各指南链接
 - [Fabric](./fabric.md)
+- [Fabric-sdk-node](./fabric-sdk-node.md)
 
 ## 感谢以下开发者的贡献
 - [guoger](https://github.com/guoger)
